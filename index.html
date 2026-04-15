@@ -67,23 +67,6 @@
       100% { transform: translateX(100%); }
     }
 
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 900;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--accent-green);
-      text-shadow: 0 0 20px var(--glow);
-      margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-      font-family: 'Courier Prime', monospace;
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      letter-spacing: 0.1em;
-    }
-
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -95,6 +78,7 @@
       gap: 1rem;
       margin-bottom: 2rem;
       border-bottom: 2px solid var(--border);
+      flex-wrap: wrap;
     }
 
     .tab {
@@ -191,13 +175,19 @@
       user-select: none;
     }
 
-    .checkbox-wrapper:hover {
+    .checkbox-wrapper:hover:not(.disabled) {
       border-color: var(--accent-green);
     }
 
     .checkbox-wrapper.active {
       border-color: var(--accent-green);
       background: rgba(58, 255, 122, 0.1);
+    }
+
+    .checkbox-wrapper.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: var(--text-muted);
     }
 
     .checkbox-wrapper input[type="checkbox"] {
@@ -207,12 +197,27 @@
       accent-color: var(--accent-green);
     }
 
+    .checkbox-wrapper.disabled input[type="checkbox"] {
+      cursor: not-allowed;
+    }
+
     .checkbox-wrapper label {
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       cursor: pointer;
       font-size: 0.9rem;
+    }
+
+    .checkbox-wrapper.disabled label {
+      cursor: not-allowed;
+    }
+
+    .locked-message {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
     }
 
     .items-container {
@@ -230,6 +235,10 @@
       gap: 1rem;
       align-items: center;
       transition: all 0.3s ease;
+    }
+
+    .item-row.sell-item {
+      grid-template-columns: 2fr 1fr 100px 80px;
     }
 
     .item-row:hover {
@@ -432,6 +441,10 @@
       color: var(--accent-green);
     }
 
+    .total-sell {
+      color: var(--accent-green);
+    }
+
     .loading {
       text-align: center;
       padding: 2rem;
@@ -461,6 +474,10 @@
         gap: 0.5rem;
       }
 
+      .item-row.sell-item {
+        grid-template-columns: 1fr;
+      }
+
       .tabs {
         flex-direction: column;
       }
@@ -473,20 +490,18 @@
 </head>
 <body>
   <div class="header">
-    <div class="header-graphic">
-      <img src="THS_splash.png" alt="Black Market" style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
-    </div>
-    <div class="subtitle">Order System for The Factory DayZ servers, brought to you by THS</div>
+    <img src="THS_splash.png" alt="Black Market" style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
   </div>
 
   <div class="container">
     <div class="tabs">
-      <button class="tab active" data-tab="create">Create Order</button>
+      <button class="tab active" data-tab="buy">Create Buy Order</button>
+      <button class="tab" data-tab="sell">Create Sell Order</button>
       <button class="tab" data-tab="lookup">Lookup Order</button>
     </div>
 
-    <!-- CREATE ORDER TAB -->
-    <div class="tab-content active" id="create-tab">
+    <!-- CREATE BUY ORDER TAB -->
+    <div class="tab-content active" id="buy-tab">
       <div class="section">
         <div class="section-title">Select Categories</div>
         <div class="category-toggles">
@@ -494,13 +509,19 @@
             <input type="checkbox" id="weapons-check">
             <label for="weapons-check">Black Market Weapons</label>
           </div>
-          <div class="checkbox-wrapper" id="drugs-toggle">
-            <input type="checkbox" id="drugs-check">
-            <label for="drugs-check">Drugs</label>
+          <div class="checkbox-wrapper disabled" id="drugs-toggle">
+            <div>
+              <input type="checkbox" id="drugs-check" disabled>
+              <label for="drugs-check">Drugs</label>
+              <div class="locked-message">Not currently taking Drug Trader orders</div>
+            </div>
           </div>
-          <div class="checkbox-wrapper" id="collectibles-toggle">
-            <input type="checkbox" id="collectibles-check">
-            <label for="collectibles-check">Collectibles</label>
+          <div class="checkbox-wrapper disabled" id="collectibles-toggle">
+            <div>
+              <input type="checkbox" id="collectibles-check" disabled>
+              <label for="collectibles-check">Collectibles</label>
+              <div class="locked-message">Not currently taking Collectible Trader orders</div>
+            </div>
           </div>
         </div>
       </div>
@@ -524,13 +545,33 @@
         <div class="section-title">Seller Information (Optional)</div>
         <div class="form-group">
           <label>Discord / IGN / Notes</label>
-          <textarea id="seller-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake, Available 6-10pm EST"></textarea>
+          <textarea id="buy-seller-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake, Available 6-10pm EST"></textarea>
         </div>
       </div>
 
-      <button class="btn" onclick="submitOrder()">Submit Order</button>
+      <button class="btn" onclick="submitBuyOrder()">Submit Buy Order</button>
 
-      <div id="order-result"></div>
+      <div id="buy-order-result"></div>
+    </div>
+
+    <!-- CREATE SELL ORDER TAB -->
+    <div class="tab-content" id="sell-tab">
+      <div class="section">
+        <div class="section-title">Available Items</div>
+        <div class="items-container" id="sell-items"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Buyer Information (Optional)</div>
+        <div class="form-group">
+          <label>Discord / IGN / Notes</label>
+          <textarea id="sell-buyer-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake"></textarea>
+        </div>
+      </div>
+
+      <button class="btn" onclick="submitSellOrder()">Submit Sell Order</button>
+
+      <div id="sell-order-result"></div>
     </div>
 
     <!-- LOOKUP ORDER TAB -->
@@ -552,11 +593,22 @@
     // Configuration - UPDATE THIS WITH YOUR DEPLOYED WEB APP URL
     const API_URL = 'https://script.google.com/macros/s/AKfycbzS-KmJGLkXrCkvA3fe-x9TXf8TwWwhW47Arwvl5_ktB6iWyXsqfnVx1SFs1oux-gh1/exec';
     
-    let inventory = null;
+    // Lookup password
+    const LOOKUP_PASSWORD = 'Because3y3GotHigh*';
+    
+    let buyInventory = null;
+    let sellInventory = null;
+    let lookupAuthenticated = false;
 
     // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
+        // Check if trying to access lookup tab
+        if (tab.dataset.tab === 'lookup' && !lookupAuthenticated) {
+          promptForPassword();
+          return;
+        }
+        
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
@@ -564,49 +616,70 @@
         document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
       });
     });
-
-    // Category toggle handlers
-    function setupCategoryToggles() {
-      ['weapons', 'drugs', 'collectibles'].forEach(category => {
-        const checkbox = document.getElementById(`${category}-check`);
-        const wrapper = document.getElementById(`${category}-toggle`);
-        const section = document.getElementById(`${category}-section`);
+    
+    function promptForPassword() {
+      const password = prompt('Enter password to access Order Lookup:');
+      
+      if (password === LOOKUP_PASSWORD) {
+        lookupAuthenticated = true;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
-        checkbox.addEventListener('change', () => {
-          if (checkbox.checked) {
-            wrapper.classList.add('active');
-            section.style.display = 'block';
-            renderCategoryItems(category);
-          } else {
-            wrapper.classList.remove('active');
-            section.style.display = 'none';
-          }
-        });
-      });
-    }
-
-    // Load inventory on page load
-    async function loadInventory() {
-      try {
-        const response = await fetch(`${API_URL}?action=getInventory`);
-        inventory = await response.json();
-        setupCategoryToggles();
-      } catch (error) {
-        console.error('Error loading inventory:', error);
-        showError('Failed to load inventory. Check your API_URL configuration.');
+        document.querySelector('[data-tab="lookup"]').classList.add('active');
+        document.getElementById('lookup-tab').classList.add('active');
+      } else if (password !== null) {
+        alert('Incorrect password. Access denied.');
       }
     }
 
-    function renderCategoryItems(category) {
+    // Category toggle handlers for buy orders
+    function setupBuyCategoryToggles() {
+      const checkbox = document.getElementById('weapons-check');
+      const wrapper = document.getElementById('weapons-toggle');
+      const section = document.getElementById('weapons-section');
+      
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          wrapper.classList.add('active');
+          section.style.display = 'block';
+          renderBuyCategoryItems('weapons');
+        } else {
+          wrapper.classList.remove('active');
+          section.style.display = 'none';
+        }
+      });
+    }
+
+    // Load inventories on page load
+    async function loadInventories() {
+      try {
+        // Load buy inventory
+        const buyResponse = await fetch(`${API_URL}?action=getInventory`);
+        buyInventory = await buyResponse.json();
+        
+        // Load sell inventory
+        const sellResponse = await fetch(`${API_URL}?action=getSellInventory`);
+        const sellData = await sellResponse.json();
+        sellInventory = sellData.items;
+        
+        setupBuyCategoryToggles();
+        renderSellItems();
+      } catch (error) {
+        console.error('Error loading inventory:', error);
+        showError('Failed to load inventory. Check your API_URL configuration.', 'buy-order-result');
+      }
+    }
+
+    function renderBuyCategoryItems(category) {
       const container = document.getElementById(`${category}-items`);
       container.innerHTML = '';
       
-      if (!inventory || !inventory[category]) {
+      if (!buyInventory || !buyInventory[category]) {
         container.innerHTML = '<div class="empty-state">No items available</div>';
         return;
       }
 
-      inventory[category].forEach((item, index) => {
+      buyInventory[category].forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'item-row';
         row.innerHTML = `
@@ -620,20 +693,55 @@
             <div class="price-value">$${formatNumber(item.buyPrice)}</div>
           </div>
           <input type="number" 
-                 id="${category}-qty-${index}" 
+                 id="buy-${category}-qty-${index}" 
                  min="0" 
                  value="0" 
                  placeholder="Qty"
                  data-category="${category}"
                  data-index="${index}">
-          <button class="btn btn-secondary" onclick="removeItem('${category}', ${index})" style="padding: 0.5rem;">X</button>
+          <button class="btn btn-secondary" onclick="removeBuyItem('${category}', ${index})" style="padding: 0.5rem;">X</button>
         `;
         container.appendChild(row);
       });
     }
 
-    function removeItem(category, index) {
-      const input = document.getElementById(`${category}-qty-${index}`);
+    function renderSellItems() {
+      const container = document.getElementById('sell-items');
+      container.innerHTML = '';
+      
+      if (!sellInventory || sellInventory.length === 0) {
+        container.innerHTML = '<div class="empty-state">No items available for sale</div>';
+        return;
+      }
+
+      sellInventory.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'item-row sell-item';
+        row.innerHTML = `
+          <div class="item-name">${item.name}</div>
+          <div>
+            <div class="price-label">Price</div>
+            <div class="price-value">$${formatNumber(item.price)}</div>
+          </div>
+          <input type="number" 
+                 id="sell-qty-${index}" 
+                 min="0" 
+                 value="0" 
+                 placeholder="Qty"
+                 data-index="${index}">
+          <button class="btn btn-secondary" onclick="removeSellItem(${index})" style="padding: 0.5rem;">X</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function removeBuyItem(category, index) {
+      const input = document.getElementById(`buy-${category}-qty-${index}`);
+      input.value = 0;
+    }
+
+    function removeSellItem(index) {
+      const input = document.getElementById(`sell-qty-${index}`);
       input.value = 0;
     }
 
@@ -645,21 +753,22 @@
       return '$' + formatNumber(num);
     }
 
-    async function submitOrder() {
+    async function submitBuyOrder() {
       const orderData = {
+        orderType: 'buy',
         weapons: [],
         drugs: [],
         collectibles: [],
-        sellerInfo: document.getElementById('seller-info').value
+        sellerInfo: document.getElementById('buy-seller-info').value
       };
 
       let hasItems = false;
 
-      ['weapons', 'drugs', 'collectibles'].forEach(category => {
-        if (!inventory || !inventory[category]) return;
+      ['weapons'].forEach(category => {
+        if (!buyInventory || !buyInventory[category]) return;
         
-        inventory[category].forEach((item, index) => {
-          const input = document.getElementById(`${category}-qty-${index}`);
+        buyInventory[category].forEach((item, index) => {
+          const input = document.getElementById(`buy-${category}-qty-${index}`);
           if (input && parseInt(input.value) > 0) {
             orderData[category].push({
               name: item.name,
@@ -673,7 +782,7 @@
       });
 
       if (!hasItems) {
-        showError('Please add at least one item to your order.');
+        showError('Please add at least one item to your buy order.', 'buy-order-result');
         return;
       }
 
@@ -686,18 +795,66 @@
         const result = await response.json();
         
         if (result.success) {
-          displayOrderSummary(result.orderId, result.orderData);
-          resetForm();
+          displayBuyOrderSummary(result.orderId, result.orderData);
+          resetBuyForm();
         } else {
-          showError('Failed to create order: ' + result.error);
+          showError('Failed to create order: ' + result.error, 'buy-order-result');
         }
       } catch (error) {
         console.error('Error submitting order:', error);
-        showError('Failed to submit order. Please try again.');
+        showError('Failed to submit order. Please try again.', 'buy-order-result');
       }
     }
 
-    function displayOrderSummary(orderId, orderData) {
+    async function submitSellOrder() {
+      const orderData = {
+        orderType: 'sell',
+        items: [],
+        sellerInfo: document.getElementById('sell-buyer-info').value
+      };
+
+      let hasItems = false;
+
+      if (sellInventory) {
+        sellInventory.forEach((item, index) => {
+          const input = document.getElementById(`sell-qty-${index}`);
+          if (input && parseInt(input.value) > 0) {
+            orderData.items.push({
+              name: item.name,
+              price: item.price,
+              quantity: parseInt(input.value)
+            });
+            hasItems = true;
+          }
+        });
+      }
+
+      if (!hasItems) {
+        showError('Please add at least one item to your sell order.', 'sell-order-result');
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          displaySellOrderSummary(result.orderId, result.orderData);
+          resetSellForm();
+        } else {
+          showError('Failed to create order: ' + result.error, 'sell-order-result');
+        }
+      } catch (error) {
+        console.error('Error submitting order:', error);
+        showError('Failed to submit order. Please try again.', 'sell-order-result');
+      }
+    }
+
+    function displayBuyOrderSummary(orderId, orderData) {
       let totalVendor = 0;
       let totalBuy = 0;
       let breakdownHtml = '';
@@ -728,7 +885,7 @@
 
       const html = `
         <div class="order-summary">
-          <div class="section-title">Order Created Successfully</div>
+          <div class="section-title">Buy Order Created Successfully</div>
           <div class="order-id">${orderId}</div>
           <div class="order-breakdown">
             ${breakdownHtml}
@@ -747,8 +904,49 @@
         </div>
       `;
 
-      document.getElementById('order-result').innerHTML = html;
-      document.getElementById('order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById('buy-order-result').innerHTML = html;
+      document.getElementById('buy-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function displaySellOrderSummary(orderId, orderData) {
+      let totalSell = 0;
+      let breakdownHtml = '<div class="breakdown-category"><div class="breakdown-category-title">Items</div>';
+
+      if (orderData.items) {
+        orderData.items.forEach(item => {
+          const itemTotal = item.price * item.quantity;
+          totalSell += itemTotal;
+          
+          breakdownHtml += `
+            <div class="breakdown-item">
+              <span>${item.quantity}x ${item.name}</span>
+              <span>${formatCurrency(itemTotal)}</span>
+            </div>
+          `;
+        });
+      }
+
+      breakdownHtml += '</div>';
+
+      const html = `
+        <div class="order-summary">
+          <div class="section-title">Sell Order Created Successfully</div>
+          <div class="order-id">${orderId}</div>
+          <div class="order-breakdown">
+            ${breakdownHtml}
+            <div class="breakdown-totals">
+              <div class="breakdown-total total-sell">
+                <span>Total:</span>
+                <span>${formatCurrency(totalSell)}</span>
+              </div>
+            </div>
+          </div>
+          ${orderData.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Buyer: ${orderData.sellerInfo}</div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('sell-order-result').innerHTML = html;
+      document.getElementById('sell-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     async function lookupOrder() {
@@ -779,39 +977,82 @@
     }
 
     function displayLookupResult(result) {
+      const orderType = result.orderType || 'buy';
       let breakdownHtml = '';
-      let totalVendor = 0;
-      let totalBuy = 0;
+      let totalsHtml = '';
 
-      ['weapons', 'drugs', 'collectibles'].forEach(category => {
-        if (result.orderData[category] && result.orderData[category].length > 0) {
-          const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
-          breakdownHtml += `<div class="breakdown-category">`;
-          breakdownHtml += `<div class="breakdown-category-title">${categoryTitle}</div>`;
-          
-          result.orderData[category].forEach(item => {
-            const itemVendor = item.vendorPrice * item.quantity;
-            const itemBuy = item.buyPrice * item.quantity;
-            totalVendor += itemVendor;
-            totalBuy += itemBuy;
+      if (orderType === 'buy') {
+        let totalVendor = 0;
+        let totalBuy = 0;
+
+        ['weapons', 'drugs', 'collectibles'].forEach(category => {
+          if (result.orderData[category] && result.orderData[category].length > 0) {
+            const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+            breakdownHtml += `<div class="breakdown-category">`;
+            breakdownHtml += `<div class="breakdown-category-title">${categoryTitle}</div>`;
+            
+            result.orderData[category].forEach(item => {
+              const itemVendor = item.vendorPrice * item.quantity;
+              const itemBuy = item.buyPrice * item.quantity;
+              totalVendor += itemVendor;
+              totalBuy += itemBuy;
+              
+              breakdownHtml += `
+                <div class="breakdown-item">
+                  <span>${item.quantity}x ${item.name}</span>
+                  <span>V: ${formatCurrency(itemVendor)} | B: ${formatCurrency(itemBuy)}</span>
+                </div>
+              `;
+            });
+            
+            breakdownHtml += `</div>`;
+          }
+        });
+
+        totalsHtml = `
+          <div class="breakdown-total total-vendor">
+            <span>Total Vendor Value:</span>
+            <span>${formatCurrency(totalVendor)}</span>
+          </div>
+          <div class="breakdown-total total-buy">
+            <span>Total Buy Value (50%):</span>
+            <span>${formatCurrency(totalBuy)}</span>
+          </div>
+        `;
+      } else if (orderType === 'sell') {
+        let totalSell = 0;
+        breakdownHtml = '<div class="breakdown-category"><div class="breakdown-category-title">Items</div>';
+
+        if (result.orderData.items) {
+          result.orderData.items.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            totalSell += itemTotal;
             
             breakdownHtml += `
               <div class="breakdown-item">
                 <span>${item.quantity}x ${item.name}</span>
-                <span>V: ${formatCurrency(itemVendor)} | B: ${formatCurrency(itemBuy)}</span>
+                <span>${formatCurrency(itemTotal)}</span>
               </div>
             `;
           });
-          
-          breakdownHtml += `</div>`;
         }
-      });
+
+        breakdownHtml += '</div>';
+
+        totalsHtml = `
+          <div class="breakdown-total total-sell">
+            <span>Total:</span>
+            <span>${formatCurrency(totalSell)}</span>
+          </div>
+        `;
+      }
 
       const timestamp = new Date(result.timestamp).toLocaleString();
+      const orderTypeLabel = orderType === 'buy' ? 'Buy Order' : 'Sell Order';
 
       const html = `
         <div class="order-summary">
-          <div class="section-title">Order Details</div>
+          <div class="section-title">${orderTypeLabel} Details</div>
           <div class="order-id">${result.orderId}</div>
           <div style="text-align: center; color: var(--text-secondary); font-family: 'Courier Prime', monospace; margin-bottom: 1rem; font-size: 0.9rem;">
             Created: ${timestamp}
@@ -819,47 +1060,45 @@
           <div class="order-breakdown">
             ${breakdownHtml}
             <div class="breakdown-totals">
-              <div class="breakdown-total total-vendor">
-                <span>Total Vendor Value:</span>
-                <span>${formatCurrency(totalVendor)}</span>
-              </div>
-              <div class="breakdown-total total-buy">
-                <span>Total Buy Value (50%):</span>
-                <span>${formatCurrency(totalBuy)}</span>
-              </div>
+              ${totalsHtml}
             </div>
           </div>
-          ${result.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Seller: ${result.sellerInfo}</div>` : ''}
+          ${result.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">${orderType === 'buy' ? 'Seller' : 'Buyer'}: ${result.sellerInfo}</div>` : ''}
         </div>
       `;
 
       document.getElementById('lookup-result').innerHTML = html;
     }
 
-    function resetForm() {
-      document.querySelectorAll('input[type="number"]').forEach(input => {
+    function resetBuyForm() {
+      document.querySelectorAll('[id^="buy-"]input[type="number"]').forEach(input => {
         input.value = 0;
       });
-      document.getElementById('seller-info').value = '';
+      document.getElementById('buy-seller-info').value = '';
       
-      ['weapons', 'drugs', 'collectibles'].forEach(category => {
-        const checkbox = document.getElementById(`${category}-check`);
-        const wrapper = document.getElementById(`${category}-toggle`);
-        const section = document.getElementById(`${category}-section`);
-        
-        checkbox.checked = false;
-        wrapper.classList.remove('active');
-        section.style.display = 'none';
-      });
+      const checkbox = document.getElementById('weapons-check');
+      const wrapper = document.getElementById('weapons-toggle');
+      const section = document.getElementById('weapons-section');
+      
+      checkbox.checked = false;
+      wrapper.classList.remove('active');
+      section.style.display = 'none';
     }
 
-    function showError(message, targetId = 'order-result') {
+    function resetSellForm() {
+      document.querySelectorAll('[id^="sell-qty-"]').forEach(input => {
+        input.value = 0;
+      });
+      document.getElementById('sell-buyer-info').value = '';
+    }
+
+    function showError(message, targetId) {
       const html = `<div class="error">${message}</div>`;
       document.getElementById(targetId).innerHTML = html;
     }
 
     // Initialize on load
-    loadInventory();
+    loadInventories();
   </script>
 </body>
 </html>
