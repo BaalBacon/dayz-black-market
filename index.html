@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Black Market Order System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e0f;
+      --bg-secondary: #131a1c;
+      --bg-tertiary: #1a2426;
+      --accent-green: #3aff7a;
+      --accent-red: #ff3a3a;
+      --accent-yellow: #ffd93a;
+      --text-primary: #e8f0f2;
+      --text-secondary: #8b9ea3;
+      --text-muted: #4a5b60;
+      --border: #2a3a3d;
+      --glow: rgba(58, 255, 122, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Titillium Web', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(58, 255, 122, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 58, 58, 0.03) 0%, transparent 50%);
+    }
+
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 2px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--accent-green) 50%, 
+        transparent 100%);
+      animation: scanline 3s linear infinite;
+    }
+
+    @keyframes scanline {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .header-graphic {
+      max-width: 600px;
+      margin: 0 auto 1rem;
+      height: 150px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-family: 'Courier Prime', monospace;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--accent-green);
+      text-shadow: 0 0 20px var(--glow);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-family: 'Courier Prime', monospace;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .tab {
+      padding: 1rem 2rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: 'Titillium Web', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+    }
+
+    .tab.active {
+      color: var(--accent-green);
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--glow);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-green);
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .category-toggles {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+
+    .checkbox-wrapper:hover {
+      border-color: var(--accent-green);
+    }
+
+    .checkbox-wrapper.active {
+      border-color: var(--accent-green);
+      background: rgba(58, 255, 122, 0.1);
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: var(--accent-green);
+    }
+
+    .checkbox-wrapper label {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .items-container {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .item-row {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 100px 80px;
+      gap: 1rem;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .item-row:hover {
+      border-color: var(--accent-green);
+      background: rgba(58, 255, 122, 0.05);
+    }
+
+    .item-name {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .price-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .price-value {
+      font-family: 'Courier Prime', monospace;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+
+    input[type="number"] {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.5rem;
+      font-family: 'Courier Prime', monospace;
+      font-size: 1rem;
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 2px var(--glow);
+    }
+
+    input[type="text"],
+    textarea {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.75rem;
+      font-family: 'Titillium Web', sans-serif;
+      font-size: 1rem;
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 2px var(--glow);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+    }
+
+    .btn {
+      background: var(--accent-green);
+      color: var(--bg-primary);
+      border: none;
+      padding: 1rem 2rem;
+      font-family: 'Titillium Web', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn:hover {
+      box-shadow: 0 0 20px var(--glow);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(58, 255, 122, 0.1);
+    }
+
+    .order-summary {
+      background: var(--bg-tertiary);
+      border: 2px solid var(--accent-green);
+      padding: 2rem;
+      margin-top: 2rem;
+      box-shadow: 0 0 30px var(--glow);
+    }
+
+    .order-id {
+      font-family: 'Courier Prime', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-green);
+      text-align: center;
+      margin-bottom: 1rem;
+      letter-spacing: 0.1em;
+    }
+
+    .order-breakdown {
+      margin-top: 1rem;
+    }
+
+    .breakdown-category {
+      margin-bottom: 1.5rem;
+    }
+
+    .breakdown-category-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-yellow);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+    }
+
+    .breakdown-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+      background: var(--bg-secondary);
+      border-left: 2px solid var(--border);
+      margin-bottom: 0.25rem;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.9rem;
+    }
+
+    .breakdown-totals {
+      border-top: 2px solid var(--accent-green);
+      padding-top: 1rem;
+      margin-top: 1rem;
+    }
+
+    .breakdown-total {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+      font-family: 'Courier Prime', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .total-vendor {
+      color: var(--accent-yellow);
+    }
+
+    .total-buy {
+      color: var(--accent-green);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .error {
+      background: rgba(255, 58, 58, 0.1);
+      border: 1px solid var(--accent-red);
+      color: var(--accent-red);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-family: 'Courier Prime', monospace;
+    }
+
+    @media (max-width: 768px) {
+      .item-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+
+      .tabs {
+        flex-direction: column;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-graphic">
+      img src="THS_splash.png" alt="Black Market" style="max-width: 100%; height: auto;">
+    </div>
+    <h1>Black Market</h1>
+    <div class="subtitle">Order System /// DayZ THS</div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" data-tab="create">Create Order</button>
+      <button class="tab" data-tab="lookup">Lookup Order</button>
+    </div>
+
+    <!-- CREATE ORDER TAB -->
+    <div class="tab-content active" id="create-tab">
+      <div class="section">
+        <div class="section-title">Select Categories</div>
+        <div class="category-toggles">
+          <div class="checkbox-wrapper" id="weapons-toggle">
+            <input type="checkbox" id="weapons-check">
+            <label for="weapons-check">Black Market Weapons</label>
+          </div>
+          <div class="checkbox-wrapper" id="drugs-toggle">
+            <input type="checkbox" id="drugs-check">
+            <label for="drugs-check">Drugs</label>
+          </div>
+          <div class="checkbox-wrapper" id="collectibles-toggle">
+            <input type="checkbox" id="collectibles-check">
+            <label for="collectibles-check">Collectibles</label>
+          </div>
+        </div>
+      </div>
+
+      <div id="weapons-section" class="section" style="display: none;">
+        <div class="section-title">Black Market Weapons</div>
+        <div class="items-container" id="weapons-items"></div>
+      </div>
+
+      <div id="drugs-section" class="section" style="display: none;">
+        <div class="section-title">Drugs</div>
+        <div class="items-container" id="drugs-items"></div>
+      </div>
+
+      <div id="collectibles-section" class="section" style="display: none;">
+        <div class="section-title">Collectibles</div>
+        <div class="items-container" id="collectibles-items"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Seller Information (Optional)</div>
+        <div class="form-group">
+          <label>Discord / IGN / Notes</label>
+          <textarea id="seller-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake, Available 6-10pm EST"></textarea>
+        </div>
+      </div>
+
+      <button class="btn" onclick="submitOrder()">Submit Order</button>
+
+      <div id="order-result"></div>
+    </div>
+
+    <!-- LOOKUP ORDER TAB -->
+    <div class="tab-content" id="lookup-tab">
+      <div class="section">
+        <div class="section-title">Lookup Order</div>
+        <div class="form-group">
+          <label>Order ID</label>
+          <input type="text" id="lookup-order-id" placeholder="e.g., 20250414-001">
+        </div>
+        <button class="btn" onclick="lookupOrder()">Find Order</button>
+      </div>
+
+      <div id="lookup-result"></div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration - UPDATE THIS WITH YOUR DEPLOYED WEB APP URL
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzS-KmJGLkXrCkvA3fe-x9TXf8TwWwhW47Arwvl5_ktB6iWyXsqfnVx1SFs1oux-gh1/exec';
+    
+    let inventory = null;
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+      });
+    });
+
+    // Category toggle handlers
+    function setupCategoryToggles() {
+      ['weapons', 'drugs', 'collectibles'].forEach(category => {
+        const checkbox = document.getElementById(`${category}-check`);
+        const wrapper = document.getElementById(`${category}-toggle`);
+        const section = document.getElementById(`${category}-section`);
+        
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            wrapper.classList.add('active');
+            section.style.display = 'block';
+            renderCategoryItems(category);
+          } else {
+            wrapper.classList.remove('active');
+            section.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // Load inventory on page load
+    async function loadInventory() {
+      try {
+        const response = await fetch(`${API_URL}?action=getInventory`);
+        inventory = await response.json();
+        setupCategoryToggles();
+      } catch (error) {
+        console.error('Error loading inventory:', error);
+        showError('Failed to load inventory. Check your API_URL configuration.');
+      }
+    }
+
+    function renderCategoryItems(category) {
+      const container = document.getElementById(`${category}-items`);
+      container.innerHTML = '';
+      
+      if (!inventory || !inventory[category]) {
+        container.innerHTML = '<div class="empty-state">No items available</div>';
+        return;
+      }
+
+      inventory[category].forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.innerHTML = `
+          <div class="item-name">${item.name}</div>
+          <div>
+            <div class="price-label">Vendor Price</div>
+            <div class="price-value">$${formatNumber(item.vendorPrice)}</div>
+          </div>
+          <div>
+            <div class="price-label">Buy Price (50%)</div>
+            <div class="price-value">$${formatNumber(item.buyPrice)}</div>
+          </div>
+          <input type="number" 
+                 id="${category}-qty-${index}" 
+                 min="0" 
+                 value="0" 
+                 placeholder="Qty"
+                 data-category="${category}"
+                 data-index="${index}">
+          <button class="btn btn-secondary" onclick="removeItem('${category}', ${index})" style="padding: 0.5rem;">X</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function removeItem(category, index) {
+      const input = document.getElementById(`${category}-qty-${index}`);
+      input.value = 0;
+    }
+
+    function formatNumber(num) {
+      return num.toLocaleString('en-US');
+    }
+
+    function formatCurrency(num) {
+      return '$' + formatNumber(num);
+    }
+
+    async function submitOrder() {
+      const orderData = {
+        weapons: [],
+        drugs: [],
+        collectibles: [],
+        sellerInfo: document.getElementById('seller-info').value
+      };
+
+      let hasItems = false;
+
+      ['weapons', 'drugs', 'collectibles'].forEach(category => {
+        if (!inventory || !inventory[category]) return;
+        
+        inventory[category].forEach((item, index) => {
+          const input = document.getElementById(`${category}-qty-${index}`);
+          if (input && parseInt(input.value) > 0) {
+            orderData[category].push({
+              name: item.name,
+              vendorPrice: item.vendorPrice,
+              buyPrice: item.buyPrice,
+              quantity: parseInt(input.value)
+            });
+            hasItems = true;
+          }
+        });
+      });
+
+      if (!hasItems) {
+        showError('Please add at least one item to your order.');
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          displayOrderSummary(result.orderId, result.orderData);
+          resetForm();
+        } else {
+          showError('Failed to create order: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error submitting order:', error);
+        showError('Failed to submit order. Please try again.');
+      }
+    }
+
+    function displayOrderSummary(orderId, orderData) {
+      let totalVendor = 0;
+      let totalBuy = 0;
+      let breakdownHtml = '';
+
+      ['weapons', 'drugs', 'collectibles'].forEach(category => {
+        if (orderData[category] && orderData[category].length > 0) {
+          const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+          breakdownHtml += `<div class="breakdown-category">`;
+          breakdownHtml += `<div class="breakdown-category-title">${categoryTitle}</div>`;
+          
+          orderData[category].forEach(item => {
+            const itemVendor = item.vendorPrice * item.quantity;
+            const itemBuy = item.buyPrice * item.quantity;
+            totalVendor += itemVendor;
+            totalBuy += itemBuy;
+            
+            breakdownHtml += `
+              <div class="breakdown-item">
+                <span>${item.quantity}x ${item.name}</span>
+                <span>V: ${formatCurrency(itemVendor)} | B: ${formatCurrency(itemBuy)}</span>
+              </div>
+            `;
+          });
+          
+          breakdownHtml += `</div>`;
+        }
+      });
+
+      const html = `
+        <div class="order-summary">
+          <div class="section-title">Order Created Successfully</div>
+          <div class="order-id">${orderId}</div>
+          <div class="order-breakdown">
+            ${breakdownHtml}
+            <div class="breakdown-totals">
+              <div class="breakdown-total total-vendor">
+                <span>Total Vendor Value:</span>
+                <span>${formatCurrency(totalVendor)}</span>
+              </div>
+              <div class="breakdown-total total-buy">
+                <span>Total Buy Value (50%):</span>
+                <span>${formatCurrency(totalBuy)}</span>
+              </div>
+            </div>
+          </div>
+          ${orderData.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Seller: ${orderData.sellerInfo}</div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('order-result').innerHTML = html;
+      document.getElementById('order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function lookupOrder() {
+      const orderId = document.getElementById('lookup-order-id').value.trim();
+      
+      if (!orderId) {
+        showError('Please enter an order ID.', 'lookup-result');
+        return;
+      }
+
+      const resultDiv = document.getElementById('lookup-result');
+      resultDiv.innerHTML = '<div class="loading">Looking up order...</div>';
+
+      try {
+        const response = await fetch(`${API_URL}?action=getOrder&orderId=${orderId}`);
+        const result = await response.json();
+        
+        if (result.error) {
+          showError(result.error, 'lookup-result');
+          return;
+        }
+
+        displayLookupResult(result);
+      } catch (error) {
+        console.error('Error looking up order:', error);
+        showError('Failed to lookup order. Please try again.', 'lookup-result');
+      }
+    }
+
+    function displayLookupResult(result) {
+      let breakdownHtml = '';
+      let totalVendor = 0;
+      let totalBuy = 0;
+
+      ['weapons', 'drugs', 'collectibles'].forEach(category => {
+        if (result.orderData[category] && result.orderData[category].length > 0) {
+          const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+          breakdownHtml += `<div class="breakdown-category">`;
+          breakdownHtml += `<div class="breakdown-category-title">${categoryTitle}</div>`;
+          
+          result.orderData[category].forEach(item => {
+            const itemVendor = item.vendorPrice * item.quantity;
+            const itemBuy = item.buyPrice * item.quantity;
+            totalVendor += itemVendor;
+            totalBuy += itemBuy;
+            
+            breakdownHtml += `
+              <div class="breakdown-item">
+                <span>${item.quantity}x ${item.name}</span>
+                <span>V: ${formatCurrency(itemVendor)} | B: ${formatCurrency(itemBuy)}</span>
+              </div>
+            `;
+          });
+          
+          breakdownHtml += `</div>`;
+        }
+      });
+
+      const timestamp = new Date(result.timestamp).toLocaleString();
+
+      const html = `
+        <div class="order-summary">
+          <div class="section-title">Order Details</div>
+          <div class="order-id">${result.orderId}</div>
+          <div style="text-align: center; color: var(--text-secondary); font-family: 'Courier Prime', monospace; margin-bottom: 1rem; font-size: 0.9rem;">
+            Created: ${timestamp}
+          </div>
+          <div class="order-breakdown">
+            ${breakdownHtml}
+            <div class="breakdown-totals">
+              <div class="breakdown-total total-vendor">
+                <span>Total Vendor Value:</span>
+                <span>${formatCurrency(totalVendor)}</span>
+              </div>
+              <div class="breakdown-total total-buy">
+                <span>Total Buy Value (50%):</span>
+                <span>${formatCurrency(totalBuy)}</span>
+              </div>
+            </div>
+          </div>
+          ${result.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Seller: ${result.sellerInfo}</div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('lookup-result').innerHTML = html;
+    }
+
+    function resetForm() {
+      document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.value = 0;
+      });
+      document.getElementById('seller-info').value = '';
+      
+      ['weapons', 'drugs', 'collectibles'].forEach(category => {
+        const checkbox = document.getElementById(`${category}-check`);
+        const wrapper = document.getElementById(`${category}-toggle`);
+        const section = document.getElementById(`${category}-section`);
+        
+        checkbox.checked = false;
+        wrapper.classList.remove('active');
+        section.style.display = 'none';
+      });
+    }
+
+    function showError(message, targetId = 'order-result') {
+      const html = `<div class="error">${message}</div>`;
+      document.getElementById(targetId).innerHTML = html;
+    }
+
+    // Initialize on load
+    loadInventory();
+  </script>
+</body>
+</html>
