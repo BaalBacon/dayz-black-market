@@ -500,8 +500,8 @@
       <button class="tab" data-tab="lookup">Lookup Order</button>
     </div>
 
-    <!-- CREATE BUY ORDER TAB -->
-    <div class="tab-content active" id="buy-tab">
+    <!-- CREATE SELL ORDER TAB -->
+    <div class="tab-content" id="sell-tab">
       <div class="section">
         <div class="section-title">Select Categories</div>
         <div class="category-toggles">
@@ -545,17 +545,17 @@
         <div class="section-title">Seller Information (Optional)</div>
         <div class="form-group">
           <label>Discord / IGN / Notes</label>
-          <textarea id="buy-seller-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake, Available 6-10pm EST"></textarea>
+          <textarea id="sell-seller-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake, Available 6-10pm EST"></textarea>
         </div>
       </div>
 
-      <button class="btn" onclick="submitBuyOrder()">Submit Buy Order</button>
+      <button class="btn" onclick="submitSellOrder()">Submit Sell Order</button>
 
-      <div id="buy-order-result"></div>
+      <div id="sell-order-result"></div>
     </div>
 
-    <!-- CREATE SELL ORDER TAB -->
-    <div class="tab-content" id="sell-tab">
+    <!-- CREATE BUY ORDER TAB -->
+    <div class="tab-content active" id="buy-tab">
       <div class="section">
         <div class="section-title">Available Items</div>
         <div class="items-container" id="sell-items"></div>
@@ -565,13 +565,13 @@
         <div class="section-title">Buyer Information (Optional)</div>
         <div class="form-group">
           <label>Discord / IGN / Notes</label>
-          <textarea id="sell-buyer-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake"></textarea>
+          <textarea id="buy-buyer-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake"></textarea>
         </div>
       </div>
 
-      <button class="btn" onclick="submitSellOrder()">Submit Sell Order</button>
+      <button class="btn" onclick="submitBuyOrder()">Submit Buy Order</button>
 
-      <div id="sell-order-result"></div>
+      <div id="buy-order-result"></div>
     </div>
 
     <!-- LOOKUP ORDER TAB -->
@@ -591,7 +591,7 @@
 
   <script>
     // Configuration - UPDATE THIS WITH YOUR DEPLOYED WEB APP URL
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzS-KmJGLkXrCkvA3fe-x9TXf8TwWwhW47Arwvl5_ktB6iWyXsqfnVx1SFs1oux-gh1/exec';
+    const API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
     
     // Lookup password
     const LOOKUP_PASSWORD = 'Because3y3GotHigh*';
@@ -632,8 +632,8 @@
       }
     }
 
-    // Category toggle handlers for buy orders
-    function setupBuyCategoryToggles() {
+    // Category toggle handlers for sell orders (players selling TO you)
+    function setupSellCategoryToggles() {
       const checkbox = document.getElementById('weapons-check');
       const wrapper = document.getElementById('weapons-toggle');
       const section = document.getElementById('weapons-section');
@@ -642,7 +642,7 @@
         if (checkbox.checked) {
           wrapper.classList.add('active');
           section.style.display = 'block';
-          renderBuyCategoryItems('weapons');
+          renderSellCategoryItems('weapons');
         } else {
           wrapper.classList.remove('active');
           section.style.display = 'none';
@@ -653,24 +653,24 @@
     // Load inventories on page load
     async function loadInventories() {
       try {
-        // Load buy inventory
-        const buyResponse = await fetch(`${API_URL}?action=getInventory`);
-        buyInventory = await buyResponse.json();
+        // Load sell inventory (what players are selling TO you - weapons/drugs/collectibles)
+        const sellResponse = await fetch(`${API_URL}?action=getInventory`);
+        buyInventory = await sellResponse.json(); // This goes to the SELL order tab
         
-        // Load sell inventory
-        const sellResponse = await fetch(`${API_URL}?action=getSellInventory`);
-        const sellData = await sellResponse.json();
-        sellInventory = sellData.items;
+        // Load buy inventory (what players are buying FROM you - AS50/PKP + TF)
+        const buyResponse = await fetch(`${API_URL}?action=getSellInventory`);
+        const buyData = await buyResponse.json();
+        sellInventory = buyData.items; // This goes to the BUY order tab
         
-        setupBuyCategoryToggles();
-        renderSellItems();
+        setupSellCategoryToggles();
+        renderBuyItems();
       } catch (error) {
         console.error('Error loading inventory:', error);
-        showError('Failed to load inventory. Check your API_URL configuration.', 'buy-order-result');
+        showError('Failed to load inventory. Check your API_URL configuration.', 'sell-order-result');
       }
     }
 
-    function renderBuyCategoryItems(category) {
+    function renderSellCategoryItems(category) {
       const container = document.getElementById(`${category}-items`);
       container.innerHTML = '';
       
@@ -693,24 +693,24 @@
             <div class="price-value">$${formatNumber(item.buyPrice)}</div>
           </div>
           <input type="number" 
-                 id="buy-${category}-qty-${index}" 
+                 id="sell-${category}-qty-${index}" 
                  min="0" 
                  value="0" 
                  placeholder="Qty"
                  data-category="${category}"
                  data-index="${index}">
-          <button class="btn btn-secondary" onclick="removeBuyItem('${category}', ${index})" style="padding: 0.5rem;">X</button>
+          <button class="btn btn-secondary" onclick="removeSellItem('${category}', ${index})" style="padding: 0.5rem;">X</button>
         `;
         container.appendChild(row);
       });
     }
 
-    function renderSellItems() {
+    function renderBuyItems() {
       const container = document.getElementById('sell-items');
       container.innerHTML = '';
       
       if (!sellInventory || sellInventory.length === 0) {
-        container.innerHTML = '<div class="empty-state">No items available for sale</div>';
+        container.innerHTML = '<div class="empty-state">No items available for purchase</div>';
         return;
       }
 
@@ -724,24 +724,24 @@
             <div class="price-value">$${formatNumber(item.price)}</div>
           </div>
           <input type="number" 
-                 id="sell-qty-${index}" 
+                 id="buy-qty-${index}" 
                  min="0" 
                  value="0" 
                  placeholder="Qty"
                  data-index="${index}">
-          <button class="btn btn-secondary" onclick="removeSellItem(${index})" style="padding: 0.5rem;">X</button>
+          <button class="btn btn-secondary" onclick="removeBuyItem(${index})" style="padding: 0.5rem;">X</button>
         `;
         container.appendChild(row);
       });
     }
 
-    function removeBuyItem(category, index) {
-      const input = document.getElementById(`buy-${category}-qty-${index}`);
+    function removeSellItem(category, index) {
+      const input = document.getElementById(`sell-${category}-qty-${index}`);
       input.value = 0;
     }
 
-    function removeSellItem(index) {
-      const input = document.getElementById(`sell-qty-${index}`);
+    function removeBuyItem(index) {
+      const input = document.getElementById(`buy-qty-${index}`);
       input.value = 0;
     }
 
@@ -753,13 +753,13 @@
       return '$' + formatNumber(num);
     }
 
-    async function submitBuyOrder() {
+    async function submitSellOrder() {
       const orderData = {
-        orderType: 'buy',
+        orderType: 'sell',
         weapons: [],
         drugs: [],
         collectibles: [],
-        sellerInfo: document.getElementById('buy-seller-info').value
+        sellerInfo: document.getElementById('sell-seller-info').value
       };
 
       let hasItems = false;
@@ -768,7 +768,7 @@
         if (!buyInventory || !buyInventory[category]) return;
         
         buyInventory[category].forEach((item, index) => {
-          const input = document.getElementById(`buy-${category}-qty-${index}`);
+          const input = document.getElementById(`sell-${category}-qty-${index}`);
           if (input && parseInt(input.value) > 0) {
             orderData[category].push({
               name: item.name,
@@ -780,54 +780,6 @@
           }
         });
       });
-
-      if (!hasItems) {
-        showError('Please add at least one item to your buy order.', 'buy-order-result');
-        return;
-      }
-
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify(orderData)
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-          displayBuyOrderSummary(result.orderId, result.orderData);
-          resetBuyForm();
-        } else {
-          showError('Failed to create order: ' + result.error, 'buy-order-result');
-        }
-      } catch (error) {
-        console.error('Error submitting order:', error);
-        showError('Failed to submit order. Please try again.', 'buy-order-result');
-      }
-    }
-
-    async function submitSellOrder() {
-      const orderData = {
-        orderType: 'sell',
-        items: [],
-        sellerInfo: document.getElementById('sell-buyer-info').value
-      };
-
-      let hasItems = false;
-
-      if (sellInventory) {
-        sellInventory.forEach((item, index) => {
-          const input = document.getElementById(`sell-qty-${index}`);
-          if (input && parseInt(input.value) > 0) {
-            orderData.items.push({
-              name: item.name,
-              price: item.price,
-              quantity: parseInt(input.value)
-            });
-            hasItems = true;
-          }
-        });
-      }
 
       if (!hasItems) {
         showError('Please add at least one item to your sell order.', 'sell-order-result');
@@ -854,7 +806,55 @@
       }
     }
 
-    function displayBuyOrderSummary(orderId, orderData) {
+    async function submitBuyOrder() {
+      const orderData = {
+        orderType: 'buy',
+        items: [],
+        sellerInfo: document.getElementById('buy-buyer-info').value
+      };
+
+      let hasItems = false;
+
+      if (sellInventory) {
+        sellInventory.forEach((item, index) => {
+          const input = document.getElementById(`buy-qty-${index}`);
+          if (input && parseInt(input.value) > 0) {
+            orderData.items.push({
+              name: item.name,
+              price: item.price,
+              quantity: parseInt(input.value)
+            });
+            hasItems = true;
+          }
+        });
+      }
+
+      if (!hasItems) {
+        showError('Please add at least one item to your buy order.', 'buy-order-result');
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          displayBuyOrderSummary(result.orderId, result.orderData);
+          resetBuyForm();
+        } else {
+          showError('Failed to create order: ' + result.error, 'buy-order-result');
+        }
+      } catch (error) {
+        console.error('Error submitting order:', error);
+        showError('Failed to submit order. Please try again.', 'buy-order-result');
+      }
+    }
+
+    function displaySellOrderSummary(orderId, orderData) {
       let totalVendor = 0;
       let totalBuy = 0;
       let breakdownHtml = '';
@@ -885,7 +885,7 @@
 
       const html = `
         <div class="order-summary">
-          <div class="section-title">Buy Order Created Successfully</div>
+          <div class="section-title">Sell Order Created Successfully</div>
           <div class="order-id">${orderId}</div>
           <div class="order-breakdown">
             ${breakdownHtml}
@@ -904,18 +904,18 @@
         </div>
       `;
 
-      document.getElementById('buy-order-result').innerHTML = html;
-      document.getElementById('buy-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById('sell-order-result').innerHTML = html;
+      document.getElementById('sell-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    function displaySellOrderSummary(orderId, orderData) {
-      let totalSell = 0;
+    function displayBuyOrderSummary(orderId, orderData) {
+      let totalBuy = 0;
       let breakdownHtml = '<div class="breakdown-category"><div class="breakdown-category-title">Items</div>';
 
       if (orderData.items) {
         orderData.items.forEach(item => {
           const itemTotal = item.price * item.quantity;
-          totalSell += itemTotal;
+          totalBuy += itemTotal;
           
           breakdownHtml += `
             <div class="breakdown-item">
@@ -930,14 +930,14 @@
 
       const html = `
         <div class="order-summary">
-          <div class="section-title">Sell Order Created Successfully</div>
+          <div class="section-title">Buy Order Created Successfully</div>
           <div class="order-id">${orderId}</div>
           <div class="order-breakdown">
             ${breakdownHtml}
             <div class="breakdown-totals">
-              <div class="breakdown-total total-sell">
+              <div class="breakdown-total total-buy">
                 <span>Total:</span>
-                <span>${formatCurrency(totalSell)}</span>
+                <span>${formatCurrency(totalBuy)}</span>
               </div>
             </div>
           </div>
@@ -945,8 +945,8 @@
         </div>
       `;
 
-      document.getElementById('sell-order-result').innerHTML = html;
-      document.getElementById('sell-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById('buy-order-result').innerHTML = html;
+      document.getElementById('buy-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     async function lookupOrder() {
@@ -977,11 +977,12 @@
     }
 
     function displayLookupResult(result) {
-      const orderType = result.orderType || 'buy';
+      const orderType = result.orderType || 'sell'; // Default to sell for backwards compat
       let breakdownHtml = '';
       let totalsHtml = '';
 
-      if (orderType === 'buy') {
+      if (orderType === 'sell') {
+        // Sell order = player selling TO you (weapons/drugs/collectibles with vendor/buy prices)
         let totalVendor = 0;
         let totalBuy = 0;
 
@@ -1019,14 +1020,15 @@
             <span>${formatCurrency(totalBuy)}</span>
           </div>
         `;
-      } else if (orderType === 'sell') {
-        let totalSell = 0;
+      } else if (orderType === 'buy') {
+        // Buy order = player buying FROM you (AS50/PKP + TF items, simple price)
+        let totalBuy = 0;
         breakdownHtml = '<div class="breakdown-category"><div class="breakdown-category-title">Items</div>';
 
         if (result.orderData.items) {
           result.orderData.items.forEach(item => {
             const itemTotal = item.price * item.quantity;
-            totalSell += itemTotal;
+            totalBuy += itemTotal;
             
             breakdownHtml += `
               <div class="breakdown-item">
@@ -1040,9 +1042,9 @@
         breakdownHtml += '</div>';
 
         totalsHtml = `
-          <div class="breakdown-total total-sell">
+          <div class="breakdown-total total-buy">
             <span>Total:</span>
-            <span>${formatCurrency(totalSell)}</span>
+            <span>${formatCurrency(totalBuy)}</span>
           </div>
         `;
       }
@@ -1063,18 +1065,18 @@
               ${totalsHtml}
             </div>
           </div>
-          ${result.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">${orderType === 'buy' ? 'Seller' : 'Buyer'}: ${result.sellerInfo}</div>` : ''}
+          ${result.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">${orderType === 'sell' ? 'Seller' : 'Buyer'}: ${result.sellerInfo}</div>` : ''}
         </div>
       `;
 
       document.getElementById('lookup-result').innerHTML = html;
     }
 
-    function resetBuyForm() {
-      document.querySelectorAll('[id^="buy-"]input[type="number"]').forEach(input => {
-        input.value = 0;
+    function resetSellForm() {
+      document.querySelectorAll('[id^="sell-"][id$="-qty-"]').forEach(input => {
+        if (input.type === 'number') input.value = 0;
       });
-      document.getElementById('buy-seller-info').value = '';
+      document.getElementById('sell-seller-info').value = '';
       
       const checkbox = document.getElementById('weapons-check');
       const wrapper = document.getElementById('weapons-toggle');
@@ -1085,11 +1087,11 @@
       section.style.display = 'none';
     }
 
-    function resetSellForm() {
-      document.querySelectorAll('[id^="sell-qty-"]').forEach(input => {
+    function resetBuyForm() {
+      document.querySelectorAll('[id^="buy-qty-"]').forEach(input => {
         input.value = 0;
       });
-      document.getElementById('sell-buyer-info').value = '';
+      document.getElementById('buy-buyer-info').value = '';
     }
 
     function showError(message, targetId) {
