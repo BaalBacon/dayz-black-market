@@ -281,7 +281,8 @@
     }
 
     input[type="text"],
-    textarea {
+    textarea,
+    select {
       background: var(--bg-tertiary);
       border: 1px solid var(--border);
       color: var(--text-primary);
@@ -292,6 +293,10 @@
       transition: all 0.3s ease;
     }
 
+    select {
+      cursor: pointer;
+    }
+
     textarea {
       resize: vertical;
       min-height: 100px;
@@ -299,7 +304,8 @@
     }
 
     input[type="text"]:focus,
-    textarea:focus {
+    textarea:focus,
+    select:focus {
       outline: none;
       border-color: var(--accent-green);
       box-shadow: 0 0 0 2px var(--glow);
@@ -562,10 +568,26 @@
       </div>
 
       <div class="section">
-        <div class="section-title">Buyer Information (Optional)</div>
+        <div class="section-title">Buyer Information (Required)</div>
         <div class="form-group">
-          <label>Discord / IGN / Notes</label>
-          <textarea id="buy-buyer-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake"></textarea>
+          <label>In-Game Name (IGN) *</label>
+          <input type="text" id="buy-ign" placeholder="e.g., Survivor_Jake" required>
+        </div>
+        <div class="form-group">
+          <label>Server *</label>
+          <select id="buy-server" required>
+            <option value="">-- Select Server --</option>
+            <option value="Cherno1">Cherno1</option>
+            <option value="Cherno2">Cherno2</option>
+            <option value="Extreme">Extreme</option>
+            <option value="Deer1">Deer1</option>
+            <option value="Deer2">Deer2</option>
+            <option value="Bitterroot">Bitterroot</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Additional Notes (Optional)</label>
+          <textarea id="buy-notes" placeholder="e.g., Available 6-10pm EST, Discord: YourName#1234"></textarea>
         </div>
       </div>
 
@@ -591,7 +613,7 @@
 
   <script>
     // Configuration - UPDATE THIS WITH YOUR DEPLOYED WEB APP URL
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzS-KmJGLkXrCkvA3fe-x9TXf8TwWwhW47Arwvl5_ktB6iWyXsqfnVx1SFs1oux-gh1/exec';
+    const API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
     
     // Lookup password
     const LOOKUP_PASSWORD = 'Because3y3GotHigh*';
@@ -807,10 +829,30 @@
     }
 
     async function submitBuyOrder() {
+      // Validate required fields
+      const ign = document.getElementById('buy-ign').value.trim();
+      const server = document.getElementById('buy-server').value;
+      const notes = document.getElementById('buy-notes').value.trim();
+
+      if (!ign) {
+        showError('Please enter your In-Game Name (IGN).', 'buy-order-result');
+        document.getElementById('buy-ign').focus();
+        return;
+      }
+
+      if (!server) {
+        showError('Please select your Server.', 'buy-order-result');
+        document.getElementById('buy-server').focus();
+        return;
+      }
+
       const orderData = {
         orderType: 'buy',
         items: [],
-        sellerInfo: document.getElementById('buy-buyer-info').value
+        ign: ign,
+        server: server,
+        notes: notes,
+        sellerInfo: `IGN: ${ign} | Server: ${server}${notes ? ' | Notes: ' + notes : ''}`
       };
 
       let hasItems = false;
@@ -928,10 +970,22 @@
 
       breakdownHtml += '</div>';
 
+      // Create copyable Discord message
+      const discordMessage = `Order #${orderId}\nIGN: ${orderData.ign}\nServer: ${orderData.server}`;
+
       const html = `
         <div class="order-summary">
           <div class="section-title">Buy Order Created Successfully</div>
           <div class="order-id">${orderId}</div>
+          
+          <div style="background: var(--bg-secondary); border: 1px solid var(--accent-green); padding: 1rem; margin: 1rem 0; border-radius: 4px;">
+            <div style="font-family: 'Courier Prime', monospace; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              Copy and paste this into Discord:
+            </div>
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 4px; font-family: 'Courier Prime', monospace; color: var(--accent-green); margin-bottom: 0.5rem; white-space: pre-wrap;" id="discord-copy-text">${discordMessage}</div>
+            <button class="btn btn-secondary" onclick="copyToClipboard('discord-copy-text')" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Copy to Clipboard</button>
+          </div>
+
           <div class="order-breakdown">
             ${breakdownHtml}
             <div class="breakdown-totals">
@@ -941,12 +995,22 @@
               </div>
             </div>
           </div>
-          ${orderData.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Buyer: ${orderData.sellerInfo}</div>` : ''}
+          ${orderData.notes ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Notes: ${orderData.notes}</div>` : ''}
         </div>
       `;
 
       document.getElementById('buy-order-result').innerHTML = html;
       document.getElementById('buy-order-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function copyToClipboard(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard! Now paste this into Discord.');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy. Please manually copy the text above.');
+      });
     }
 
     async function lookupOrder() {
@@ -1091,7 +1155,9 @@
       document.querySelectorAll('[id^="buy-qty-"]').forEach(input => {
         input.value = 0;
       });
-      document.getElementById('buy-buyer-info').value = '';
+      document.getElementById('buy-ign').value = '';
+      document.getElementById('buy-server').value = '';
+      document.getElementById('buy-notes').value = '';
     }
 
     function showError(message, targetId) {
