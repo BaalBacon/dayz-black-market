@@ -548,10 +548,26 @@
       </div>
 
       <div class="section">
-        <div class="section-title">Seller Information (Optional)</div>
+        <div class="section-title">Seller Information (Required)</div>
         <div class="form-group">
-          <label>Discord / IGN / Notes</label>
-          <textarea id="sell-seller-info" placeholder="e.g., Discord: YourName#1234, IGN: Survivor_Jake, Available 6-10pm EST"></textarea>
+          <label>In-Game Name (IGN) *</label>
+          <input type="text" id="sell-ign" placeholder="e.g., Survivor_Jake" required>
+        </div>
+        <div class="form-group">
+          <label>Server *</label>
+          <select id="sell-server" required>
+            <option value="">-- Select Server --</option>
+            <option value="Cherno1">Cherno1</option>
+            <option value="Cherno2">Cherno2</option>
+            <option value="Extreme">Extreme</option>
+            <option value="Deer1">Deer1</option>
+            <option value="Deer2">Deer2</option>
+            <option value="Bitterroot">Bitterroot</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Additional Notes (Optional)</label>
+          <textarea id="sell-notes" placeholder="e.g., Available 6-10pm EST, Discord: YourName#1234"></textarea>
         </div>
       </div>
 
@@ -776,12 +792,32 @@
     }
 
     async function submitSellOrder() {
+      // Validate required fields
+      const ign = document.getElementById('sell-ign').value.trim();
+      const server = document.getElementById('sell-server').value;
+      const notes = document.getElementById('sell-notes').value.trim();
+
+      if (!ign) {
+        showError('Please enter your In-Game Name (IGN).', 'sell-order-result');
+        document.getElementById('sell-ign').focus();
+        return;
+      }
+
+      if (!server) {
+        showError('Please select your Server.', 'sell-order-result');
+        document.getElementById('sell-server').focus();
+        return;
+      }
+
       const orderData = {
         orderType: 'sell',
         weapons: [],
         drugs: [],
         collectibles: [],
-        sellerInfo: document.getElementById('sell-seller-info').value
+        ign: ign,
+        server: server,
+        notes: notes,
+        sellerInfo: `IGN: ${ign} | Server: ${server}${notes ? ' | Notes: ' + notes : ''}`
       };
 
       let hasItems = false;
@@ -925,10 +961,22 @@
         }
       });
 
+      // Create copyable Discord message
+      const discordMessage = `Sell Order #${orderId}\nIGN: ${orderData.ign}\nServer: ${orderData.server}`;
+
       const html = `
         <div class="order-summary">
           <div class="section-title">Sell Order Created Successfully</div>
           <div class="order-id">${orderId}</div>
+          
+          <div style="background: var(--bg-secondary); border: 1px solid var(--accent-green); padding: 1rem; margin: 1rem 0; border-radius: 4px;">
+            <div style="font-family: 'Courier Prime', monospace; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              Copy and paste this into Discord:
+            </div>
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 4px; font-family: 'Courier Prime', monospace; color: var(--accent-green); margin-bottom: 0.5rem; white-space: pre-wrap;" id="discord-copy-text-sell">${discordMessage}</div>
+            <button class="btn btn-secondary" onclick="copyToClipboard('discord-copy-text-sell')" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Copy to Clipboard</button>
+          </div>
+
           <div class="order-breakdown">
             ${breakdownHtml}
             <div class="breakdown-totals">
@@ -942,7 +990,7 @@
               </div>
             </div>
           </div>
-          ${orderData.sellerInfo ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Seller: ${orderData.sellerInfo}</div>` : ''}
+          ${orderData.notes ? `<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: 'Courier Prime', monospace; color: var(--text-secondary);">Notes: ${orderData.notes}</div>` : ''}
         </div>
       `;
 
@@ -971,7 +1019,7 @@
       breakdownHtml += '</div>';
 
       // Create copyable Discord message
-      const discordMessage = `Order #${orderId}\nIGN: ${orderData.ign}\nServer: ${orderData.server}`;
+      const discordMessage = `Buy Order #${orderId}\nIGN: ${orderData.ign}\nServer: ${orderData.server}`;
 
       const html = `
         <div class="order-summary">
@@ -1140,7 +1188,9 @@
       document.querySelectorAll('[id^="sell-"][id$="-qty-"]').forEach(input => {
         if (input.type === 'number') input.value = 0;
       });
-      document.getElementById('sell-seller-info').value = '';
+      document.getElementById('sell-ign').value = '';
+      document.getElementById('sell-server').value = '';
+      document.getElementById('sell-notes').value = '';
       
       const checkbox = document.getElementById('weapons-check');
       const wrapper = document.getElementById('weapons-toggle');
